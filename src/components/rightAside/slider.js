@@ -80,6 +80,7 @@ class Slider extends Component {
     })
   }
   render () {
+    console.log('bannerListbannerListbannerList:', this.props)
     const { dir } = this.state;
     const { imgs, bots } = this.state.options;
     if (imgs && imgs.length > 0) {

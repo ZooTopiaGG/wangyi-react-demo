@@ -31,7 +31,10 @@ module.exports = function override(config, env) {
     'plugins': resolve('src/plugins'),
     'utils': resolve('src/utils'),
     'views': resolve('src/views'),
-    'services': resolve('src/services')
+    'services': resolve('src/services'),
+    'actions': resolve('src/actions'),
+    'reducers': resolve('src/reducers'),
+    'store': resolve('src/store')
   }
 
   return config

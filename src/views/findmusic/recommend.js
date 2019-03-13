@@ -1,7 +1,12 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import Slider from 'components/rightAside/slider';
 import List from 'components/rightAside/list';
 import { getPersonalized, getDjprogram, getBanner } from 'services/recommend';
+import { connect } from 'react-redux';
+import {
+  fetchBannerList
+} from '../../actions/findmusic/recommend'
 
 class Recommend extends Component {
   constructor(props) {
@@ -26,38 +31,48 @@ class Recommend extends Component {
 
   async getPersonalizedList() {
     let res = await getPersonalized();
-    if (res.code === 200) {
+    if (res && res.code === 200) {
       this._isMounted && this.setState({ personalizedList: res.result })
     }
   }
 
   async getDjprogramList() {
     let res = await getDjprogram();
-    if (res.code === 200) {
+    if (res && res.code === 200) {
       this._isMounted && this.setState({ djprogramList: res.result })
     }
   }
 
   componentDidMount() {
-    this.getBannerList()
+    // this.getBannerList()
     this.getPersonalizedList()
     this.getDjprogramList()
     this._isMounted = true
+    // fetchBannerList
+    const { dispatch, bannerParam } = this.props
+    dispatch(fetchBannerList(bannerParam))
+  }
+  componentWillReceiveProps(nextProps) {
+    if(nextProps.bannerParam !== this.props.bannerParam) {
+      const { dispatch, bannerParam } = nextProps
+      dispatch(fetchBannerList(bannerParam))
+    }
   }
   componentWillUnmount() {
     this._isMounted = false
   }
   render () {
-    const { personalizedList, djprogramList, bannerList } = this.state
+    const { personalizedList, djprogramList } = this.state
+    const { bannerList } = this.props
     const options = {
       speed: 5000, // default 5000
       bots: true, // show bots default true
-      interval: false, // isopen interval
-      imgs: bannerList
+      interval: false // isopen interval
     }
+    console.log('bannerList:', bannerList)
     return (
       <div className="recommend">
-        <Slider options={options}/>
+        <Slider options={options} bannerList={ bannerList }/>
         <div className="category-recommend">
           <div className="recommend-songs flex flex-pack-justify">
             <span>推荐歌单</span>
@@ -84,4 +99,34 @@ class Recommend extends Component {
   }
 }
 
-export default Recommend
+const mapStateToProps = state => {
+  const { requestBannerList, bannerParam }  = state
+  const { isFetching, lastUpdated, items: data } = requestBannerList[
+    bannerParam
+  ] || {
+    isFetching: true,
+    items: [],
+    lastUpdated: Date.now()
+  }
+
+  console.log('data:', data)
+  return {
+    bannerParam,
+    bannerList: data.banners,
+    isFetching,
+    lastUpdated
+  }
+}
+
+Recommend.propTypes = {
+  bannerParam: PropTypes.string.isRequired,
+  bannerList: PropTypes.arrayOf(
+    PropTypes.shape({
+      imageUrl: PropTypes.string.isRequired
+    }).isRequired
+  ),
+  isFetching: PropTypes.bool.isRequired,
+  lastUpdated: PropTypes.number.isRequired
+}
+
+export default connect(mapStateToProps)(Recommend)

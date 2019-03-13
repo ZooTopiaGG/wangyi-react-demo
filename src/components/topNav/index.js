@@ -1,31 +1,46 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { Icon, Input, Avatar } from 'antd';
-import { getSongUrl } from 'services/api';
+// import { getSongUrl } from 'services/api';
 import './index.less';
+import { LoginForm } from '../login';
+import {
+  fetchLogin
+} from '../../actions'
 const Search = Input.Search;
+
 // const ipcRenderer = window.require('electron').ipcRenderer;
 
 let ipcRenderer;
 let isFullScreen = false;
-export default class TopNav extends Component {
+class TopNav extends Component {
   constructor() {
     super();
     this.state = {
       appName: '网易云音乐',
+      show: false
     };
   }
-  async handleClick() {
-    try {
-      // const res = await fetch('http://localhost:4000/song/url?id=33894312');
-      let res = await getSongUrl({ id: '33894312' });
-      console.log(res)
-    } catch(e){}
+  handleClick() {
+    this.setState({
+      show: true
+    })
+  }
+  async handleSubmmit(values) {
+    const { dispatch } = this.props
+    await dispatch(fetchLogin(values))
+    console.log('asasdaxxxxxxxxxxxxx: ', this.props)
+    localStorage.setItem('userInfo', JSON.stringify(this.props.data))
+    this.setState({
+      show: !this.props.isShow
+    })
   }
   componentDidMount() {
     this.handleMinus()
     this.handleFullScreen()
     this.handleClose()
   }
+
   handleMinus() {
     document.querySelector('.win-minus').addEventListener('click', function() {
       ipcRenderer.send('hide-window', 'hide');
@@ -55,6 +70,20 @@ export default class TopNav extends Component {
     var noDrag = {
       WebkitAppRegion: 'no-drag'
     }
+    let local = localStorage.getItem('userInfo')
+    let userInfo = JSON.parse(local)
+    let user = null;
+    if (local !== '{}' && userInfo.profile) {
+      user = <div className="info-login pointer info-hover flex flex-align-center flex-pack-center">
+        <Avatar size={26} src={userInfo.profile.avatarUrl} style={{ marginRight: 5 }}/>
+        <span>{ userInfo.profile.nickname }</span>
+      </div>
+    } else {
+      user = <div className="info-login pointer info-hover flex flex-align-center flex-pack-center" onClick={this.handleClick.bind(this)}>
+        <Avatar size={26} icon="user" style={{ marginRight: 5 }}/>
+        <span>未登录</span>
+      </div>
+    }
     return (
       <div className="top-nav flex">
         {/* 头部左边 */}
@@ -73,10 +102,7 @@ export default class TopNav extends Component {
         <div className="flex-1"></div>
         {/* 头部右边 */}
         <div className="header-info flex flex-align-center" style={noDrag}>
-          <div className="info-login pointer info-hover" onClick={this.handleClick}>
-            <Avatar size={26} icon="user"  style={{ marginRight: 5 }}/>
-            <span>未登录</span>
-          </div>
+          { user }
           <div className="info-link flex flex-pack-justify">
             <Icon type="skin" className="pointer info-hover"/>
             <Icon type="heart" className="pointer info-hover"/>
@@ -91,7 +117,25 @@ export default class TopNav extends Component {
             <Icon type="close" className="pointer win-close info-hover" onClick={this.handleClose}/>
           </div>
         </div>
+        <LoginForm show={this.state.show} onSubmmit={ (values) => this.handleSubmmit(values) }/>
       </div>
     )
   } 
 }
+
+const mapStateToProps = state => {
+  const { userLoginParam, requestInfo } = state
+  const { isShow, lastUpdated, items: data } = requestInfo.data || {
+    isShow: true,
+    items: {},
+    lastUpdated: Date.now()
+  }
+  return {
+    userLoginParam,
+    isShow,
+    data,
+    lastUpdated
+  }
+}
+
+export default connect(mapStateToProps)(TopNav)
